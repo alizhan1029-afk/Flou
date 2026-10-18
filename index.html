@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#11111b">
+<meta name="description" content="ALIZHAN AI — твой умный ИИ-помощник">
+<title>ALIZHAN AI</title>
+<style>
+:root{color-scheme:dark;--bg:#101018;--panel:#191925;--line:#303044;--text:#f5f3ff;--muted:#aaa8c0;--accent:#a78bfa}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#292047 0,#101018 48%);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{padding:18px 16px;border-bottom:1px solid var(--line);background:#11111bdd;position:sticky;top:0;backdrop-filter:blur(12px)}
+.brand{max-width:760px;margin:auto;display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;border-radius:15px;background:#30234b;display:grid;place-items:center;font-size:25px}.name{font-weight:800;font-size:20px;letter-spacing:.3px}.sub{font-size:12px;color:var(--muted)}
+main{width:100%;max-width:760px;margin:0 auto;padding:20px 14px 120px;flex:1}.welcome{padding:18px;border:1px solid var(--line);border-radius:22px;background:#191925cc;margin-bottom:16px}.welcome h1{font-size:24px;margin:0 0 6px}.welcome p{margin:0;color:var(--muted);line-height:1.5}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.chips button{background:#252337;border:1px solid var(--line);color:var(--text);border-radius:999px;padding:9px 12px;cursor:pointer}
+#chat{display:flex;flex-direction:column;gap:12px}.msg{max-width:92%;padding:13px 15px;border-radius:18px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}.user{align-self:flex-end;background:#5b3aa4;border-bottom-right-radius:5px}.bot{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:5px}.error{color:#ffb4b4}
+.composer{position:fixed;bottom:0;left:0;right:0;padding:12px max(12px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:#101018ee;border-top:1px solid var(--line);backdrop-filter:blur(14px)}form{max-width:732px;margin:auto;display:flex;gap:8px}textarea{flex:1;min-width:0;resize:none;max-height:120px;border:1px solid var(--line);border-radius:17px;background:#1c1b29;color:var(--text);font:inherit;padding:13px 14px;outline:none}textarea:focus{border-color:var(--accent)}#send{border:0;border-radius:16px;padding:0 18px;background:var(--accent);color:#171226;font-size:20px;font-weight:800;cursor:pointer}#send:disabled{opacity:.5}.hint{text-align:center;color:var(--muted);font-size:11px;margin:7px 0 0}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="logo">🤖</div><div><div class="name">ALIZHAN AI</div><div class="sub">Твой умный помощник</div></div></div></header>
+<main>
+<section class="welcome"><h1>Привет! 👋</h1><p>Я ALIZHAN AI. Задавай вопросы, проси помочь с учёбой, идеями или программированием.</p><div class="chips"><button type="button" data-prompt="Объясни мне Python простыми словами">🐍 Учить Python</button><button type="button" data-prompt="Придумай интересную идею для проекта">💡 Идея проекта</button><button type="button" data-prompt="Помоги мне составить план на сегодня">📅 План на день</button></div></section>
+<div id="chat" aria-live="polite"></div>
+</main>
+<div class="composer"><form id="form"><textarea id="input" rows="1" maxlength="4000" placeholder="Напиши сообщение..." aria-label="Сообщение"></textarea><button id="send" aria-label="Отправить">➤</button></form><div class="hint">Не вводи пароли и личные секреты. Ответы ИИ могут ошибаться.</div></div>
+<script>
+const form=document.getElementById('form'), input=document.getElementById('input'), chat=document.getElementById('chat'), send=document.getElementById('send');
+const history=[];
+function bubble(text,who,extra=''){const el=document.createElement('div');el.className='msg '+who+(extra?' '+extra:'');el.textContent=text;chat.appendChild(el);el.scrollIntoView({behavior:'smooth',block:'end'});return el}
+async function sendMessage(text){text=text.trim();if(!text||send.disabled)return;input.value='';input.style.height='auto';bubble(text,'user');history.push({role:'user',content:text});send.disabled=true;const pending=bubble('Думаю…','bot');try{const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history})});const data=await res.json();pending.remove();if(!res.ok)throw new Error(data.error||'Не удалось получить ответ.');bubble(data.reply||'Пустой ответ от ИИ.','bot');history.push({role:'assistant',content:data.reply||''});}catch(e){pending.remove();bubble(e.message,'bot','error');history.pop();}finally{send.disabled=false;input.focus();}}
+form.addEventListener('submit',e=>{e.preventDefault();sendMessage(input.value)});
+input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,120)+'px'});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit()}});
+document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>sendMessage(b.dataset.prompt)));
+</script>
+</body>
+</html>
